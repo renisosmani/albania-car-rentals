@@ -1,13 +1,15 @@
 # Albania Car Rentals – TIA Airport Marketplace
 
-A minimal, functional web demo for a **multi-vendor car rental marketplace** focused on **Tirana International Airport (TIA)**. Built with Next.js (App Router), Prisma, SQLite, and Mapbox.
+A minimal, functional web demo for a **multi-vendor car rental marketplace** focused on **Tirana International Airport (TIA)**. Built with Next.js (App Router), Prisma, SQLite, and Leaflet + OpenStreetMap.
+
+> **No API keys or accounts required.** The map is powered by the free [OpenStreetMap](https://www.openstreetmap.org/) tiles via [Leaflet](https://leafletjs.com/).
 
 ---
 
 ## Features
 
 - 🔍 **Date-range availability search** – finds cars with no overlapping booking blocks
-- 📍 **Mapbox map** – interactive pins for each pickup point, colour-coded by type
+- 📍 **Interactive map** – free Leaflet/OpenStreetMap pins for each pickup point, colour-coded by type
 - 🏪 **Multi-dealer, multi-pickup-point** – each dealer can have multiple pickup locations
 - 🚗 **Car listings** – cars grouped by their default pickup point
 - 🧩 **Pickup point types** – Self Pickup · Key Delivery · Meet & Greet (with instructions + optional fee)
@@ -22,12 +24,17 @@ A minimal, functional web demo for a **multi-vendor car rental marketplace** foc
 | Framework | Next.js 16 (App Router, TypeScript) |
 | Database | SQLite (via `@prisma/adapter-libsql` + `@libsql/client`) |
 | ORM | Prisma 7 |
-| Map | Mapbox GL JS |
+| Map | Leaflet + OpenStreetMap (free, no account needed) |
 | Styling | Tailwind CSS 4 |
 
 ---
 
-## Quick Start
+## Running Locally
+
+### Prerequisites
+
+- **Node.js 18+** – [download](https://nodejs.org/)
+- **npm** (comes with Node.js)
 
 ### 1. Clone and install
 
@@ -39,25 +46,19 @@ npm install
 
 ### 2. Configure environment variables
 
-Copy the example env file:
-
 ```bash
-cp .env .env.local
+cp .env.example .env.local
 ```
 
-Edit `.env.local` and set your Mapbox token:
+The default `.env.local` works out of the box — no tokens or accounts required:
 
 ```env
 DATABASE_URL="file:./dev.db"
-NEXT_PUBLIC_MAPBOX_TOKEN=pk.your_actual_mapbox_token_here
 ```
-
-> **Get a free Mapbox token:** Sign up at [mapbox.com](https://account.mapbox.com/), go to **Access tokens**, and copy your public token.  
-> The app works without a token (map shows a placeholder), but you won't see the interactive map.
 
 ### 3. Set up the database
 
-Run migrations (creates `dev.db`):
+Run migrations (creates `dev.db` in the project root):
 
 ```bash
 npm run db:migrate
@@ -81,7 +82,18 @@ This inserts:
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open **[http://localhost:3000](http://localhost:3000)** in your browser.
+
+> **All five steps at once** (copy-paste friendly):
+> ```bash
+> git clone https://github.com/renisosmani/albania-car-rentals.git
+> cd albania-car-rentals
+> npm install
+> cp .env.example .env.local
+> npm run db:migrate
+> npm run db:seed
+> npm run dev
+> ```
 
 ---
 
@@ -170,7 +182,7 @@ albania-car-rentals/
 │   ├── page.tsx               # Search UI (client component)
 │   └── globals.css
 ├── components/
-│   └── MapView.tsx            # Mapbox map with pickup-point markers
+│   └── MapView.tsx            # Leaflet map with pickup-point markers
 ├── lib/
 │   ├── prisma.ts              # Prisma client singleton
 │   └── types.ts               # Shared TypeScript types
@@ -179,7 +191,7 @@ albania-car-rentals/
 │   ├── seed.ts                # Demo data seed script
 │   └── migrations/            # SQL migration history
 ├── prisma.config.ts           # Prisma 7 config (datasource URL)
-└── .env                       # Environment variable template
+└── .env.example               # Environment variable template
 ```
 
 ---
