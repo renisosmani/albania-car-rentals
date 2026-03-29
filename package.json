@@ -7,12 +7,12 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "db:migrate": "prisma migrate dev",
-    "db:seed": "npx tsx prisma/seed.ts",
-    "db:reset": "prisma migrate reset --force && npx tsx prisma/seed.ts"
+    "db:migrate": "prisma migrate dev && prisma generate",
+    "db:seed": "prisma generate && npx tsx prisma/seed.ts",
+    "db:reset": "prisma migrate reset --force && prisma generate && npx tsx prisma/seed.ts"
   },
   "prisma": {
-    "seed": "npx tsx prisma/seed.ts"
+    "seed": "prisma generate && npx tsx prisma/seed.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.17.2",
