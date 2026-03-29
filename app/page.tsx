@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import type { SearchResult, SearchResponse } from "@/lib/types";
 
-// Dynamically import map to avoid SSR issues with mapbox-gl
+// Dynamically import map to avoid SSR issues with leaflet
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
 const PICKUP_TYPE_LABELS: Record<string, string> = {

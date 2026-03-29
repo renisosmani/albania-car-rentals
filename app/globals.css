@@ -12,8 +12,8 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* Mapbox overrides */
-.mapboxgl-map {
+/* Leaflet overrides */
+.leaflet-container {
   font-family: var(--font-geist-sans), sans-serif;
 }
 
