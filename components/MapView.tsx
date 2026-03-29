@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import type { SearchResult } from "@/lib/types";
 
 const PICKUP_TYPE_COLORS: Record<string, string> = {
@@ -29,27 +29,24 @@ export default function MapView({
   onSelectPickupPoint,
 }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const mapRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<L.Marker[]>([]);
 
+  // Initialise the Leaflet map (runs once on mount)
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-    if (!token || token === "your_mapbox_token_here") {
-      return;
-    }
-
-    mapboxgl.accessToken = token;
-
-    const map = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: "mapbox://styles/mapbox/streets-v12",
-      center: [19.7216, 41.4146],
+    const map = L.map(mapContainer.current, {
+      center: [41.4146, 19.7216], // [lat, lng] – Tirana, Albania
       zoom: 14,
     });
 
-    map.addControl(new mapboxgl.NavigationControl(), "top-right");
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    }).addTo(map);
+
     mapRef.current = map;
 
     return () => {
@@ -69,12 +66,11 @@ export default function MapView({
 
     for (const result of results) {
       const { pickupPoint, dealerName, availableCarCount } = result;
-      const color =
-        PICKUP_TYPE_COLORS[pickupPoint.type] ?? "#6b7280";
+      const color = PICKUP_TYPE_COLORS[pickupPoint.type] ?? "#6b7280";
+      const typeLabel = PICKUP_TYPE_LABELS[pickupPoint.type] ?? pickupPoint.type;
 
-      // Custom marker element
+      // Custom teardrop-shaped marker icon
       const el = document.createElement("div");
-      el.className = "cursor-pointer select-none";
       el.style.cssText = `
         background: ${color};
         color: white;
@@ -89,75 +85,55 @@ export default function MapView({
         font-weight: 700;
         box-shadow: 0 2px 6px rgba(0,0,0,0.35);
         border: 2px solid white;
-        transition: transform 0.15s, box-shadow 0.15s;
+        cursor: pointer;
       `;
-
       const inner = document.createElement("span");
       inner.style.transform = "rotate(45deg)";
       inner.textContent = String(availableCarCount);
       el.appendChild(inner);
 
-      el.addEventListener("click", () => {
-        onSelectPickupPoint(pickupPoint.id);
+      const icon = L.divIcon({
+        html: el.outerHTML,
+        className: "",
+        iconSize: [36, 36],
+        iconAnchor: [36, 36], // anchor at bottom-right (the tip of the teardrop)
       });
 
-      const popup = new mapboxgl.Popup({
-        offset: 30,
-        closeButton: false,
-        maxWidth: "220px",
-      }).setHTML(`
-        <div style="font-family: sans-serif; padding: 4px;">
+      const marker = L.marker([pickupPoint.lat, pickupPoint.lng], { icon }).addTo(map);
+
+      marker.bindPopup(`
+        <div style="font-family: sans-serif; padding: 4px; min-width: 160px;">
           <div style="font-weight: 700; font-size: 13px; margin-bottom: 4px;">${dealerName}</div>
           <div style="font-size: 12px; color: #374151; margin-bottom: 2px;">${pickupPoint.name}</div>
-          <div style="font-size: 11px; color: ${color}; font-weight: 600;">${PICKUP_TYPE_LABELS[pickupPoint.type] ?? pickupPoint.type}</div>
+          <div style="font-size: 11px; color: ${color}; font-weight: 600;">${typeLabel}</div>
           <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">${availableCarCount} car${availableCarCount !== 1 ? "s" : ""} available</div>
         </div>
       `);
 
-      const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
-        .setLngLat([pickupPoint.lng, pickupPoint.lat])
-        .setPopup(popup)
-        .addTo(map);
+      marker.on("click", () => {
+        onSelectPickupPoint(pickupPoint.id);
+      });
 
       markersRef.current.push(marker);
     }
   }, [results, onSelectPickupPoint]);
 
-  // Highlight selected marker
+  // Pan to selected pickup point
   useEffect(() => {
-    // Pan to selected if found
     if (!selectedId || !mapRef.current) return;
     const result = results.find((r) => r.pickupPoint.id === selectedId);
     if (result) {
-      mapRef.current.flyTo({
-        center: [result.pickupPoint.lng, result.pickupPoint.lat],
-        zoom: 15,
-        duration: 600,
-      });
+      mapRef.current.flyTo(
+        [result.pickupPoint.lat, result.pickupPoint.lng],
+        15,
+        { duration: 0.6 },
+      );
     }
   }, [selectedId, results]);
-
-  const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-  const noToken = !token || token === "your_mapbox_token_here";
 
   return (
     <div className="relative w-full h-full rounded-xl overflow-hidden border border-gray-200">
       <div ref={mapContainer} className="w-full h-full" />
-      {noToken && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-blue-50 text-center px-6">
-          <div className="text-4xl mb-3">🗺️</div>
-          <p className="font-semibold text-gray-800 mb-1">Map not available</p>
-          <p className="text-sm text-gray-500">
-            Set <code className="bg-gray-100 px-1 rounded">NEXT_PUBLIC_MAPBOX_TOKEN</code> in{" "}
-            <code className="bg-gray-100 px-1 rounded">.env.local</code> to enable the Mapbox map.
-          </p>
-          {results.length > 0 && (
-            <p className="text-xs text-gray-400 mt-3">
-              {results.length} pickup point{results.length !== 1 ? "s" : ""} available in the list below.
-            </p>
-          )}
-        </div>
-      )}
     </div>
   );
 }
